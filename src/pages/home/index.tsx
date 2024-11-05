@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Social } from "../../components/Social";
-import { useParams } from "react-router-dom"; // Para capturar o ID do usuário da URL
 
 import {
   FaFacebook,
@@ -16,7 +15,6 @@ import {
   query,
   doc,
   getDoc,
-  where,
 } from "firebase/firestore";
 
 interface LinkProps {
@@ -34,42 +32,36 @@ interface SocialLinksProps {
 }
 
 export function Home() {
-  const { userId } = useParams<{ userId: string }>(); // Captura o ID do usuário da URL
   const [links, setLinks] = useState<LinkProps[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLinksProps>();
 
   useEffect(() => {
-    if (!userId) return;
-
     async function loadLinks() {
       const linksRef = collection(db, "links");
-      const queryRef = query(
-        linksRef,
-        where("userId", "==", userId), // Filtra pelos links do usuário específico
-        orderBy("created", "asc")
-      );
+      const queryRef = query(linksRef, orderBy("created", "asc"));
 
       const snapshot = await getDocs(queryRef);
-      const lista: LinkProps[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        url: doc.data().url,
-        bg: doc.data().bg,
-        color: doc.data().color,
-      }));
+      let lista = [] as LinkProps[];
+
+      snapshot.forEach((doc) => {
+        lista.push({
+          id: doc.id,
+          name: doc.data().name,
+          url: doc.data().url,
+          bg: doc.data().bg,
+          color: doc.data().color,
+        });
+      });
 
       setLinks(lista);
     }
 
     loadLinks();
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
-    // Somente execute `loadSocialLinks` se `userId` estiver definido
-    if (!userId) return;
-
     async function loadSocialLinks() {
-      const docRef = doc(db, "social", userId);
+      const docRef = doc(db, "social", "link");
       const snapshot = await getDoc(docRef);
 
       if (snapshot.exists()) {
@@ -82,7 +74,7 @@ export function Home() {
     }
 
     loadSocialLinks();
-  }, [userId]); // Observe `userId` para garantir que ele esteja definido
+  }, []);
 
   return (
     <div className="flex flex-col w-full py-4 items-center justify-center">
@@ -117,7 +109,7 @@ export function Home() {
               <img
                 src="/assets/images/logo.webp"
                 alt="Logo"
-                className="w-12 h-12 rounded-full object-cover" // Diminuí o tamanho da imagem
+                className="w-12 h-12 rounded-full object-cover"
               />
               <p
                 className="text-base md:text-lg mx-4 flex-grow text-center"
@@ -125,29 +117,24 @@ export function Home() {
               >
                 {link.name}
               </p>
-              <FaArrowRight size={24} color={link.color} />{" "}
-              {/* Ícone de seta indicando clique */}
+              <FaArrowRight size={24} color={link.color} />
             </a>
           </section>
         ))}
 
         {socialLinks && Object.keys(socialLinks).length > 0 && (
           <footer className="flex justify-center gap-3 my-4">
-            {socialLinks.facebook && (
-              <Social url={socialLinks.facebook}>
-                <FaFacebook size={35} color="#FFF" />
-              </Social>
-            )}
-            {socialLinks.youtube && (
-              <Social url={socialLinks.youtube}>
-                <FaYoutube size={35} color="#FFF" />
-              </Social>
-            )}
-            {socialLinks.instagram && (
-              <Social url={socialLinks.instagram}>
-                <FaInstagram size={35} color="#FFF" />
-              </Social>
-            )}
+            <Social url={socialLinks?.facebook}>
+              <FaFacebook size={35} color="#FFF" />
+            </Social>
+
+            <Social url={socialLinks?.youtube}>
+              <FaYoutube size={35} color="#FFF" />
+            </Social>
+
+            <Social url={socialLinks?.instagram}>
+              <FaInstagram size={35} color="#FFF" />
+            </Social>
           </footer>
         )}
       </main>

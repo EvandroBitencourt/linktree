@@ -21,11 +21,7 @@ export function Register() {
 
     try {
       // Cria o usuário com email e senha no Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       // Adiciona os dados do usuário na coleção `users` no Firestore
@@ -37,8 +33,16 @@ export function Register() {
 
       toast.success("Usuário cadastrado com sucesso!");
       navigate("/login", { replace: true }); // Redireciona para a página de login
-    } catch (error) {
-      toast.error("Erro ao cadastrar usuário");
+    } catch (error: any) {
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("O email já está em uso.");
+      } else if (error.code === "auth/weak-password") {
+        toast.error("A senha é muito fraca.");
+      } else if (error.code === "auth/invalid-email") {
+        toast.error("O email é inválido.");
+      } else {
+        toast.error("Erro ao cadastrar usuário: " + error.message);
+      }
       console.error("Erro ao cadastrar usuário: ", error);
     }
   }
